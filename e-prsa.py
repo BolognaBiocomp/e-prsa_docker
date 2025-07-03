@@ -4,9 +4,11 @@ import numpy as np
 import torch
 from torch import nn
 from transformers import T5EncoderModel, T5Tokenizer
+from transformers.utils import logging as hf_logging
 import re
 import esm
 import sys
+from datetime import datetime
 
 class EpRSANN(nn.Module):
     def __init__(self, IN_SIZE, WING, H1_SIZE=64, H2_SIZE=16, DROPOUT=0.1):
@@ -32,90 +34,141 @@ class EpRSANN(nn.Module):
         return x
 
 class EpRSA:
-    def __init__(self, input_file, output_file, batch_size=15000):
+    def __init__(self, input_file, output_file, batch_size=15000, verbosity=2):
         """Initialize EpRSA with paths, constants, and models."""
-        # Set input/output/batch parameters
-        self.input_file = input_file
-        self.output_file = output_file
-        self.batch_size = batch_size
+        try:
+            # Set command line parameters
+            self.input_file = input_file
+            self.output_file = output_file
+            self.batch_size = batch_size
+            self.verbosity = verbosity
 
-        # Set hardcoded model paths and constants
-        self.PROT_T5_MODEL = "/mnt/fat3/data/manfredi/plm/prot_t5_xl_uniref50/"
-        self.ESM2_MODEL = "/mnt/fat3/data/manfredi/plm/esm2_t33_650M_UR50D.pt"
-        self.EPRSA_MODEL = "/mnt/mini3/work/manfredi/E-pRSA/deeprex2.model.ckpt"
-        self.EMB_SIZE = 1280 + 1024
-        self.WING = 15
+            # Set model paths and constants
+            self.PROT_T5_MODEL = "/mnt/fat3/data/manfredi/plm/prot_t5_xl_uniref50/"
+            self.ESM2_MODEL = "/mnt/fat3/data/manfredi/plm/esm2_t33_650M_UR50D.pt"
+            self.EPRSA_MODEL = "/mnt/mini3/work/manfredi/E-pRSA/deeprex2.model.ckpt"
+            self.EMB_SIZE = 1280 + 1024
+            self.WING = 15
 
-        # Load models
-        self.model_t5 = T5EncoderModel.from_pretrained(self.PROT_T5_MODEL)
-        self.tokenizer = T5Tokenizer.from_pretrained(self.PROT_T5_MODEL)
-        self.model_esm2, self.alphabet2 = esm.pretrained.load_model_and_alphabet(self.ESM2_MODEL)
-        self.model_eprsa = EpRSANN(self.EMB_SIZE, self.WING)
-        self.model_eprsa.load_state_dict(torch.load(self.EPRSA_MODEL)["state_dict"])
-        self.model_eprsa.eval()
-        self.model_eprsa.float()
+            # Load models
+            hf_logging.set_verbosity_error() # Suppress hf warning
+            self.model_t5 = T5EncoderModel.from_pretrained(self.PROT_T5_MODEL)
+            self.tokenizer = T5Tokenizer.from_pretrained(self.PROT_T5_MODEL)
+            self.model_esm2, self.alphabet2 = esm.pretrained.load_model_and_alphabet(self.ESM2_MODEL)
+            self.model_eprsa = EpRSANN(self.EMB_SIZE, self.WING)
+            self.model_eprsa.load_state_dict(torch.load(self.EPRSA_MODEL)["state_dict"])
+            self.model_eprsa.eval()
+            self.model_eprsa.float()
+        except Exception as e:
+            handle_error(f"Error while loading the models: {e}", verbosity)
+
+        if self.verbosity >= 2:
+            print("All models loaded.")
 
     def run_batches(self):
-        """Main loop to batch and process input sequences."""
+        """Main loop."""
+        # Read sequences
         try:
-            # Read input sequences and IDs from the FASTA file
             seq_ids, sequences = self._read_fasta(self.input_file)
         except Exception as e:
-            print(f"Error reading FASTA: {e}", file=sys.stderr)
-            sys.exit(1)
+            handle_error(f"Error reading FASTA: {e}", self.verbosity)
 
-        # Overwrite output file
-        with open(self.output_file, 'w') as writer:
-            pass
+        if self.verbosity >= 2:
+            print(f"{len(seq_ids)} sequences loaded, starting predictions.")
 
-        # Initialize counters and buffers
-        i = 0
-        _sequences = []
-        _seq_ids = []
-        count = 0
-        max_len = 0
+        # Reset output file
+        open(self.output_file, 'w').close()
 
-        while True:
-            # Accumulate sequences in the current batch until it reaches size limit
-            if (i < len(sequences)) and ((count + 1) * max(len(sequences[i]), max_len) <= self.batch_size):
-                _sequences.append(sequences[i])
-                _seq_ids.append(seq_ids[i])
-                count += 1
-                max_len = max(len(sequences[i]), max_len)
-                i += 1
-            else:
-                # Perform prediction and output writing for current batch
-                try:
-                    self._predict(_seq_ids, _sequences)
-                except Exception as e:
-                    print(f"Error during prediction: {e}", file=sys.stderr)
-                    sys.exit(1)
-                # Reset batch buffers
-                _sequences = []
-                _seq_ids = []
-                count = 0
-                max_len = 0
-                if i >= len(sequences):
-                    break
+        # Process batches
+        try:
+            for i, (batch_ids, batch_seqs) in enumerate(self._generate_batches(seq_ids, sequences), 1):
+                self._predict(batch_ids, batch_seqs, i)
+        except Exception as e:
+            handle_error(f"Error during prediction: {e}", self.verbosity)
+
+        if self.verbosity >= 2:
+            print(f"Predictions for {len(seq_ids)} sequences done. You can find the output in the file {self.output_file}")
 
     def _read_fasta(self, filename):
-        """Parse a multi-FASTA file, handling multiline sequences."""
-        sequences, seq_ids = [], []
+        """Parse a multi-FASTA file."""
+        seq_ids, sequences = [], []
         with open(filename) as reader:
-            current_seq, current_id = [], None
+            current_id, current_seq = None, ""
             for line in reader:
                 line = line.strip()
                 if line.startswith(">"):
                     if current_id is not None:
-                        sequences.append("".join(current_seq))
+                        seq_ids.append(current_id)
+                        sequences.append(current_seq)
                     current_id = line[1:].split()[0]
-                    seq_ids.append(current_id)
-                    current_seq = []
+                    current_seq = ""
                 else:
-                    current_seq.append(line)
+                    current_seq += line
             if current_id is not None:
-                sequences.append("".join(current_seq))
+                seq_ids.append(current_id)
+                sequences.append(current_seq)
         return seq_ids, sequences
+
+    def _generate_batches(self, seq_ids, sequences):
+        """Yield batches of sequences without exceeding the maximum number of padded residues."""
+        batch_ids = []
+        batch_seqs = []
+        max_len = 0
+
+        for seq_id, seq in zip(seq_ids, sequences):
+            proposed_max_len = max(max_len, len(seq))
+            proposed_batch_size = proposed_max_len * (len(batch_seqs) + 1)
+
+            if proposed_batch_size <= self.batch_size:
+                # Add to current batch
+                batch_ids.append(seq_id)
+                batch_seqs.append(seq)
+                max_len = proposed_max_len
+            else:
+                # Yield current batch
+                yield batch_ids, batch_seqs
+                # Start new batch
+                batch_ids = [seq_id]
+                batch_seqs = [seq]
+                max_len = len(seq)
+                
+        # Yield final batch
+        if batch_ids:
+            yield batch_ids, batch_seqs
+
+    def _predict(self, seq_ids, sequences, batch_num):
+        """Run the full prediction pipeline and write results to the file."""
+        if self.verbosity >= 2:
+            print(f"Batch {batch_num} ({len(seq_ids)} sequences) . . .", end="", flush=True)
+
+        # Embed sequences
+        protT5 = self._embed_prot_t5(sequences)
+        esm2 = self._embed_esm(sequences, seq_ids)
+
+        # Concatenate
+        Xs = self._concatenate_padded(protT5, esm2)
+        del esm2, protT5
+        gc.collect()
+        
+        # Predict
+        pred = self.model_eprsa(Xs)
+        del Xs
+        gc.collect()
+
+        # Write results to output file
+        with open(self.output_file, 'a') as writer:
+            pred_idx = 0
+            for seq_id, seq in zip(seq_ids, sequences):
+                for idx, res in enumerate(seq, 1):
+                    p = float(pred[pred_idx])
+                    c = 'Exposed' if p >= 0.2 else 'Buried'
+                    print(seq_id, str(idx), res, str(round(p, 2)), c, sep='\t', file=writer, flush=True)
+                    pred_idx += 1
+        del pred
+        gc.collect()
+
+        if self.verbosity >= 2:
+            print(" Done!")
 
     def _embed_prot_t5(self, sequences):
         """Compute ProtT5 embeddings for a list of sequences."""
@@ -175,7 +228,7 @@ class EpRSA:
         return ret
 
     def _concatenate_padded(self, protT5, esm2):
-        """Combine ProtT5 and ESM2 embeddings and apply wing padding."""
+        """Combine ProtT5 and ESM2 embeddings and apply padding."""
         Xs = []
         Xs_padder = np.zeros((self.WING, self.EMB_SIZE))
         for a, b in zip(protT5, esm2):
@@ -184,55 +237,38 @@ class EpRSA:
                 Xs.append(np.transpose(embs[i - self.WING:i + self.WING + 1]))
         return torch.from_numpy(np.array(Xs)).float()
 
-    def _predict(self, seq_ids, sequences):
-        """Run the full prediction pipeline and write results to file."""
-        # Embed sequences
-        protT5 = self._embed_prot_t5(sequences)
-        esm2 = self._embed_esm(sequences, seq_ids)
+def handle_error(message, verbosity):
+    """Handle errors according to verbosity level."""
+    if verbosity == 0:
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open("error-log.txt", "a") as log:
+            log.write(f"[{timestamp}] {message}\n")
+    else:
+        print(message, file=sys.stderr)
+    sys.exit(1)
 
-        # Concatenate and pass to neural network
-        Xs = self._concatenate_padded(protT5, esm2)
-        del esm2, protT5
-        gc.collect()
-
-        pred = self.model_eprsa(Xs)
-        del Xs
-        gc.collect()
-
-        # Threshold predictions into exposed/buried classes
-        class_pred = ['Exposed' if p >= 0.2 else 'Buried' for p in pred]
-
-        # Prepare final output entries
-        ids_list, res_list, idx_list = [], [], []
-        for seq_id, sequence in zip(seq_ids, sequences):
-            for idx, res in enumerate(sequence, 1):
-                ids_list.append(seq_id)
-                res_list.append(res)
-                idx_list.append(idx)
-
-        # Write results to output file
-        with open(self.output_file, 'a') as writer:
-            for id, idx, r, c, p in zip(ids_list, idx_list, res_list, class_pred, pred):
-                print(id, str(idx), r, str(round(float(p), 2)), c, sep='\t', file=writer, flush=True)
-
-        del pred, class_pred, ids_list, res_list, idx_list, seq_id, sequence, res, writer, id, idx, r, c, p
-        gc.collect()
-
-
-def main():
-    """Parse arguments and run E-pRSA pipeline."""
+def parse_args():
+    """Parse arguments."""
     parser = argparse.ArgumentParser(description="Run E-pRSA on a multifasta file.")
     parser.add_argument("input_file", help="Input FASTA file with sequences.")
     parser.add_argument("output_file", help="Output file to write results.")
-    parser.add_argument("--batch_size", type=int, default=15000, help="Maximum sequence batch size. Default: 15000")
-    args = parser.parse_args()
+    parser.add_argument(
+        "--batch_size",
+        type=int,
+        default=15000,
+        help=("Maximum number of padded residues to process in a batch (default: 15000). This is calculated as the number of sequences in a batch times the length of the longest sequence in that batch. Higher values improve speed but require more RAM. Suggested values based on available RAM: 2,000 for 8 GB, 4,000 for 16 GB, 8,000 for 32 GB, 15,000 for 64 GB, 30,000 for 128 GB. Monitor memory usage on first run to adjust if needed.")
+    )
+    parser.add_argument("--verbosity", type=int, default=2, choices=[0,1,2], help="Verbosity level (Default: 2): 0=silent (log errors to local file), 1=errors only, 2=progress messages.")
+    return parser.parse_args()
 
+def main():
+    """Main function."""
     try:
-        runner = EpRSA(args.input_file, args.output_file, args.batch_size)
+        args = parse_args()
+        runner = EpRSA(args.input_file, args.output_file, args.batch_size, args.verbosity)
         runner.run_batches()
     except Exception as e:
-        print(f"Fatal error: {e}", file=sys.stderr)
-        sys.exit(1)
+        handle_error(f"Fatal error: {e}", args.verbosity)
 
 
 if __name__ == "__main__":
