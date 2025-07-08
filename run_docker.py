@@ -89,7 +89,7 @@ def main(argv):
       image=FLAGS.docker_image_name,
       command=command_args,
       device_requests=None,
-      remove=False,
+      remove=True,
       detach=True,
       volumes = volume_cfg,
       user=FLAGS.docker_user,
