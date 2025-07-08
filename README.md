@@ -51,7 +51,7 @@ pip install docker absl-py
 ### 3. Clone the repository and move into the project directory
 
 ```bash
-git clone https://github.com/BolognaBiocomp/e-prsa_docker
+git clone https://github.com/MatteoManfredi/e-prsa_docker.git
 cd e-prsa_docker
 ```
 
@@ -65,11 +65,11 @@ docker build -t eprsa:1.0 .
 
 ```bash
 cd ~
-wget https://coconat.biocomp.unibo.it/static/data/coconat-plms.tar.gz
-tar xvzf coconat-plms.tar.gz
+wget https://coconat.biocomp.unibo.it/static/data/coconat-plms.tar.gz -O e-prsa-plms.tar.gz
+tar xvzf e-prsa-plms.tar.gz
 ```
 
-This will create a `coconat-plms/` directory containing the required models.
+This will create a `e-prsa-plms/` directory containing the required models.
 
 ---
 
@@ -88,7 +88,7 @@ cd e-prsa_docker
 python run_docker.py \
   --fasta_file=example-data/Q96KB5.fasta \
   --output_file=example-data/Q96KB5.tsv \
-  --plm_dir=${HOME}/coconat-plms
+  --plm_dir=${HOME}/e-prsa-plms
 ```
 
 ### Optional: Adjusting batch size for performance
@@ -98,7 +98,7 @@ You can customize the number of padded residues processed per batch using the `-
     python run_docker.py \
       --fasta_file=example-data/Q96KB5.fasta \
       --output_file=example-data/Q96KB5.tsv \
-      --plm_dir=${HOME}/coconat-plms \
+      --plm_dir=${HOME}/e-prsa-plms \
       --batch_size=8000
 
 **Default value:** `--batch_size=1000`
