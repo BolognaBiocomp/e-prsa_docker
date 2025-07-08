@@ -25,6 +25,12 @@ To install Docker Engine on a Debian-based system, follow the official instructi
 sudo usermod -aG docker $USER
 ```
 
+Then, run:
+```
+newgrp docker
+```
+to apply changes to group configuration.
+
 ---
 
 ## Installation
