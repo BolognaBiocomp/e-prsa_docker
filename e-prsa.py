@@ -1,3 +1,4 @@
+#!/usr/local/bin/python -W ignore
 import argparse
 import gc
 import numpy as np
@@ -46,7 +47,7 @@ class EpRSA:
 
             # Set model paths and constants
             self.PROT_T5_MODEL = f"{ecfg.EPRSA_PLM_DIR}/prot_t5_xl_uniref50/"
-            self.ESM2_MODEL = f"{ecfg.EPRSA_PLM_DIR}/esm2_t33_650M_UR50D.pt"
+            self.ESM2_MODEL = f"{ecfg.EPRSA_PLM_DIR}/esm2/esm2_t33_650M_UR50D.pt"
             self.EPRSA_MODEL = ecfg.EPRSA_MODEL
             self.EMB_SIZE = 1280 + 1024
             self.WING = 15
