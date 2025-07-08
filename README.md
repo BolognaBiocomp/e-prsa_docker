@@ -1,65 +1,90 @@
 # E-pRSA
-Predictor of residue solvent accessibility
+
+Predictor of residue solvent accessibility.
+
+E-pRSA is a deep learning-based tool that predicts the relative solvent accessibility (RSA) of each residue in a protein sequence using protein language models (PLMs) such as ProtT5 and ESM2.
+
+---
 
 ## Requirements
 
-E-pRSA requires Docker Engine to be installed. Please, follow this instructions
-for the installation of Docker Engine on a Debian system:
+E-pRSA requires Docker Engine to be installed.
 
-https://docs.docker.com/engine/install/debian/
+To install Docker Engine on a Debian-based system, follow the official instructions:  
+[https://docs.docker.com/engine/install/debian/](https://docs.docker.com/engine/install/debian/)
 
-E-pRSA requires the loading of large pre-trained protein language models (ProtT5 and ESM2)
-in memory. We suggest to run E-pRSA on a machine with at least 4 CPU cores and 48GB of RAM.
+**Hardware requirements**:
+- At least 4 CPU cores
+- At least 48 GB RAM  
+  (necessary to load large pre-trained protein language models)
+
+---
 
 ## Installation
 
-Create a conda environment with Python 3:
+### 1. Create and activate a conda environment
 
-```
+```bash
 conda create -n eprsa-docker python
 conda activate eprsa-docker
 ```
 
-Install dependencies using pip:
+### 2. Install required Python packages
 
-```
+```bash
 pip install docker absl-py
 ```
 
-Clone this repo and cd into the package dir:
+### 3. Clone the repository and move into the project directory
 
-```
+```bash
 git clone https://github.com/BolognaBiocomp/e-prsa_docker
 cd e-prsa_docker
 ```
 
-Build the Docker image:
+### 4. Build the Docker image
 
-```
+```bash
 docker build -t eprsa:1.0 .
 ```
 
-Download the ESM and ProtT5 pLMs (e.g. on ${HOME}):
+### 5. Download pre-trained models (ProtT5 and ESM2)
 
-```
-cd
+```bash
+cd ~
 wget https://coconat.biocomp.unibo.it/static/data/coconat-plms.tar.gz
 tar xvzf coconat-plms.tar.gz
 ```
 
+This will create a `coconat-plms/` directory containing the required models.
+
+---
+
 ## Run E-pRSA
 
-To run the program use the run_docker.py script inside the
-e-prsa_docker root directory, providing a FASTA file an output file, and the path
-where ESM2 and ProtT5 pLMs are stored, as follows:
+To run the predictor, use the `run_docker.py` script in the root directory. You must provide:
 
-```
+- a FASTA input file
+- an output file path
+- the path to the pre-trained models directory
+
+### Example
+
+```bash
 cd e-prsa_docker
-python run_docker.py --fasta_file=example-data/example.fasta \
---output_file=example-data/example.tsv --plm_dir=${HOME}/coconat-plms
+python run_docker.py \
+  --fasta_file=example-data/Q96KB5.fasta \
+  --output_file=example-data/Q96KB5.tsv \
+  --plm_dir=${HOME}/coconat-plms
 ```
 
-The output file (example-data/example.tsv) looks like the following:
+---
+
+## Output Format
+
+The output is a tab-separated values (TSV) file with one row per residue.
+
+Example:
 
 ```
 sp|Q96KB5|TOPK_HUMAN	1	M	0.41	Exposed
@@ -69,10 +94,41 @@ sp|Q96KB5|TOPK_HUMAN	4	I	0.37	Exposed
 sp|Q96KB5|TOPK_HUMAN	5	S	0.49	Exposed
 sp|Q96KB5|TOPK_HUMAN	6	N	0.59	Exposed
 sp|Q96KB5|TOPK_HUMAN	7	F	0.29	Exposed
-
 ```
 
-You have one row for each residues, and columns are defined as follows:
+### Column description
 
-* ID: protein accession, as reported in the input FASTA file
-* ...
+| Column        | Description                                        |
+|---------------|----------------------------------------------------|
+| **ID**        | Protein accession (from FASTA header)              |
+| **Position**  | Residue index (1-based)                            |
+| **Residue**   | Amino acid (1-letter code)                         |
+| **RSA Score** | Predicted relative solvent accessibility (0 to 1) |
+| **Label**     | Discrete label: `Exposed` or `Buried`             |
+
+---
+
+## Citation
+
+If you use **E-pRSA** in your work, please cite:
+
+> _E-pRSA: deep learning-based residue solvent accessibility prediction using protein language models_  
+> [Biocomputing Group – University of Bologna](https://biocomp.unibo.it)  
+> DOI or preprint coming soon.
+
+---
+
+## Contact
+
+For questions or issues, please contact:
+
+**Biocomputing Group – University of Bologna**  
+📧 [biocomp@unibo.it](mailto:biocomp@unibo.it)  
+🌐 [https://biocomp.unibo.it](https://biocomp.unibo.it)
+
+---
+
+## License
+
+This project is distributed under the **MIT License**.  
+See the [`LICENSE`](./LICENSE) file for details.
