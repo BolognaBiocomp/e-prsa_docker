@@ -89,7 +89,7 @@ class EpRSA:
             handle_error(f"Error during prediction: {e}", self.verbosity)
 
         if self.verbosity >= 2:
-            print(f"Predictions for {len(seq_ids)} sequences done. You can find the output in the file {self.output_file}")
+            print(f"Predictions for {len(seq_ids)} sequences done.")
 
     def _read_fasta(self, filename):
         """Parse a multi-FASTA file."""
