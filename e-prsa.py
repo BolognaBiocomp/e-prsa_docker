@@ -9,6 +9,7 @@ import re
 import esm
 import sys
 from datetime import datetime
+from eprsalib import eprsacfg as ecfg
 
 class EpRSANN(nn.Module):
     def __init__(self, IN_SIZE, WING, H1_SIZE=64, H2_SIZE=16, DROPOUT=0.1):
@@ -44,9 +45,9 @@ class EpRSA:
             self.verbosity = verbosity
 
             # Set model paths and constants
-            self.PROT_T5_MODEL = "/mnt/fat3/data/manfredi/plm/prot_t5_xl_uniref50/"
-            self.ESM2_MODEL = "/mnt/fat3/data/manfredi/plm/esm2_t33_650M_UR50D.pt"
-            self.EPRSA_MODEL = "/mnt/mini3/work/manfredi/E-pRSA/deeprex2.model.ckpt"
+            self.PROT_T5_MODEL = f"{ecfg.EPRSA_PLM_DIR}/prot_t5_xl_uniref50/"
+            self.ESM2_MODEL = f"{ecfg.EPRSA_PLM_DIR}/esm2_t33_650M_UR50D.pt"
+            self.EPRSA_MODEL = ecfg.EPRSA_MODEL
             self.EMB_SIZE = 1280 + 1024
             self.WING = 15
 
