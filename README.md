@@ -78,6 +78,38 @@ python run_docker.py \
   --plm_dir=${HOME}/coconat-plms
 ```
 
+### Optional: Adjusting batch size for performance
+
+You can customize the number of padded residues processed per batch using the `--batch_size` option:
+
+    python run_docker.py \
+      --fasta_file=example-data/Q96KB5.fasta \
+      --output_file=example-data/Q96KB5.tsv \
+      --plm_dir=${HOME}/coconat-plms \
+      --batch_size=8000
+
+**Default value:** `--batch_size=1000`
+
+The batch size is computed as:
+
+    batch_size = number_of_sequences × length_of_longest_sequence_in_batch
+
+Larger values improve execution speed but require more memory.
+
+Use the table below as a reference for tuning `--batch_size` based on your available RAM:
+
+| Available RAM | Recommended `--batch_size` |
+|---------------|-----------------------------|
+| 8 GB          | 2000                        |
+| 16 GB         | 4000                        |
+| 32 GB         | 8000                        |
+| 64 GB         | 15000                       |
+| 128 GB        | 30000                       |
+
+> 💡 *Tip:* Monitor memory usage during the first run and adjust accordingly.
+
+
+
 ---
 
 ## Output Format
