@@ -18,6 +18,13 @@ To install Docker Engine on a Debian-based system, follow the official instructi
 - At least 48 GB RAM  
   (necessary to load large pre-trained protein language models)
 
+> **Important:** After installing Docker, make sure your current user has permission to run Docker commands without `sudo`.  
+> You can do this by adding your user to the `docker` group:
+
+```bash
+sudo usermod -aG docker $USER
+```
+
 ---
 
 ## Installation
