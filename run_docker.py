@@ -78,8 +78,8 @@ def main(argv):
   print("Mounting %s on %s" % (source_output_dir, mnt_output))
 
   command_args.extend([
-         #"--batch_size",
-         #f"{FLAGS.batch_size}",
+         "--batch_size",
+         f"{FLAGS.batch_size}",
          f'{target_fasta_file}',
          f'{target_out_file}'
          ])
