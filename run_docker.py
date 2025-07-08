@@ -78,8 +78,8 @@ def main(argv):
   print("Mounting %s on %s" % (source_output_dir, mnt_output))
 
   command_args.extend([
-         "--batch_size",
-         f"{FLAGS.batch_size}",
+         #"--batch_size",
+         #f"{FLAGS.batch_size}",
          f'{target_fasta_file}',
          f'{target_out_file}'
          ])
@@ -89,7 +89,7 @@ def main(argv):
       image=FLAGS.docker_image_name,
       command=command_args,
       device_requests=None,
-      remove=True,
+      remove=False,
       detach=True,
       volumes = volume_cfg,
       user=FLAGS.docker_user,
