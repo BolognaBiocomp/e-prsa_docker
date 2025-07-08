@@ -112,9 +112,7 @@ sp|Q96KB5|TOPK_HUMAN	7	F	0.29	Exposed
 
 If you use **E-pRSA** in your work, please cite:
 
-> _E-pRSA: deep learning-based residue solvent accessibility prediction using protein language models_  
-> [Biocomputing Group – University of Bologna](https://biocomp.unibo.it)  
-> DOI or preprint coming soon.
+> Manfredi M, Savojardo C, Martelli PL, Casadio R. E-pRSA: Embeddings Improve the Prediction of Residue Relative Solvent Accessibility in Protein Sequence. J Mol Biol. 2024 Sep 1;436(17):168494. doi: 10.1016/j.jmb.2024.168494. 
 
 ---
 
@@ -123,7 +121,7 @@ If you use **E-pRSA** in your work, please cite:
 For questions or issues, please contact:
 
 **Biocomputing Group – University of Bologna**  
-📧 [biocomp@unibo.it](mailto:biocomp@unibo.it)  
+📧 [matteo.manfredi4@unibo.it](mailto:matteo.manfredi4@unibo.it)  
 🌐 [https://biocomp.unibo.it](https://biocomp.unibo.it)
 
 ---
