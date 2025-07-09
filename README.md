@@ -65,7 +65,7 @@ docker build -t eprsa:1.0 .
 
 ```bash
 cd ~
-wget https://e-prsa.biocomp.unibo.it/main/download_plms/
+wget https://e-prsa.biocomp.unibo.it/main/download_plms/e-prsa-plms.tar.gz
 tar xvzf e-prsa-plms.tar.gz
 ```
 
