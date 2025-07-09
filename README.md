@@ -65,11 +65,11 @@ docker build -t eprsa:1.0 .
 
 ```bash
 cd ~
-wget https://coconat.biocomp.unibo.it/static/data/coconat-plms.tar.gz -O e-prsa-plms.tar.gz
+wget https://e-prsa.biocomp.unibo.it/main/download_plms/
 tar xvzf e-prsa-plms.tar.gz
 ```
 
-This will create a `e-prsa-plms/` directory containing the required models.
+This will create a `e-prsa-plms/` directory containing the required models. Please be aware that the models require approximately 40 GB of free disk space.
 
 ---
 
