@@ -51,7 +51,7 @@ pip install docker absl-py
 ### 3. Clone the repository and move into the project directory
 
 ```bash
-git clone https://github.com/MatteoManfredi/e-prsa_docker.git
+git clone https://github.com/BolognaBiocomp/e-prsa_docker.git
 cd e-prsa_docker
 ```
 
